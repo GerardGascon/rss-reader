@@ -1,6 +1,6 @@
 import time
 from datetime import timedelta
-from email.utils import parsedate_to_datetime
+from dateutil import parser
 from io import BytesIO
 
 import feedparser
@@ -17,11 +17,11 @@ def fetch_rss_feed(response) -> feedparser.FeedParserDict:
 
 
 def send_entries(feed: Feed, content: feedparser.FeedParserDict):
-    for entry in content.entries:
+    for entry in reversed(content.entries):
         if hasattr(entry, "published"):
-            entry_date = parsedate_to_datetime(entry.published)
+            entry_date = parser.parse(entry.published)
         elif hasattr(entry, "updated"):
-            entry_date = parsedate_to_datetime(entry.updated)
+            entry_date = parser.parse(entry.updated)
         else:
             continue # Skip entries without a date
 
