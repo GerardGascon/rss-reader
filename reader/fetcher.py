@@ -1,5 +1,6 @@
 import time
 from datetime import timedelta
+from email.utils import parsedate_to_datetime
 from io import BytesIO
 
 import feedparser
@@ -7,25 +8,44 @@ import requests
 from django.utils import timezone
 
 from lists.models import Feed
-from notifier import telegram
+from notifier import discord
 
 
-def fetch_rss_feed(response):
+def fetch_rss_feed(response) -> feedparser.FeedParserDict:
     content = BytesIO(response.content)
-    feed = feedparser.parse(content)
-    return feed.entries
+    return feedparser.parse(content)
 
 
-def fetch_feed(feed):
+def send_entries(feed: Feed, content: feedparser.FeedParserDict):
+    for entry in content.entries:
+        if hasattr(entry, "published"):
+            entry_date = parsedate_to_datetime(entry.published)
+        elif hasattr(entry, "updated"):
+            entry_date = parsedate_to_datetime(entry.updated)
+        else:
+            continue # Skip entries without a date
+
+        if entry_date <= feed.last_fetched:
+            continue
+
+        title = f"**{entry.title}**" if hasattr(entry, "title") else "(No title provided)"
+        summary = entry.summary if hasattr(entry, "summary") else "(No summary provided)"
+
+        message = f"{title}\n\n{summary}\n\n🔗 {entry.link}"
+        discord.send_message(feed, message)
+    pass
+
+
+def fetch_feed(feed: Feed):
     try:
         print(f"[{timezone.now()}] Fetching: {feed.name} ({feed.url})")
         response = requests.get(feed.url, timeout=10)
         response.raise_for_status()
+        content = fetch_rss_feed(response)
+        send_entries(feed, content)
         feed.last_fetched = timezone.now()
         feed.save()
-        content = fetch_rss_feed(response)
-        telegram.send_message(f"[✓] Fetched {feed.name}")
-        print(f"[✓] Fetched {feed.name}: {content}")
+        print(f"[✓] Fetched {feed.name}")
     except Exception as e:
         print(f"[!] Error fetching {feed.name}: {e}")
 
