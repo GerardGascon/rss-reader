@@ -32,10 +32,10 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
-    CSRF_TRUSTED_ORIGINS = ['http://localhost']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
 else:
     ALLOWED_HOSTS = ['*']
-    CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://localhost:1234', 'http://rss.local', 'https://rss.gerardgascon.com']
+    CSRF_TRUSTED_ORIGINS = [os.environ.get('CSRF_TRUSTED_ORIGIN')]
 
 
 # Application definition
