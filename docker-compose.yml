@@ -20,7 +20,7 @@ services:
   nginx:
     image: nginx:latest
     ports:
-      - "1234:80"
+      - "3412:80"
     restart: always
     volumes:
       - static:/app/staticfiles
