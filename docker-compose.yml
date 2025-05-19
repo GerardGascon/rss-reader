@@ -8,6 +8,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: ${ADMIN_USER}
       DJANGO_SUPERUSER_EMAIL: ${ADMIN_EMAIL}
       DJANGO_DB_PATH: /app/data/db.sqlite3
+      DEBUG: False
     command: >
       sh -c "python manage.py migrate &&
               python manage.py collectstatic --no-input &&
