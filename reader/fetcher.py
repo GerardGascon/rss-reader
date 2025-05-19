@@ -1,14 +1,14 @@
 import time
 from datetime import timedelta
-from dateutil import parser
 from io import BytesIO
 
 import feedparser
 import requests
+from dateutil import parser
 from django.utils import timezone
 
 from lists.models import Feed
-from notifier import discord
+from reader.notifier.notifier import DiscordNotifier, Notifier
 
 
 def fetch_rss_feed(response) -> feedparser.FeedParserDict:
@@ -17,6 +17,8 @@ def fetch_rss_feed(response) -> feedparser.FeedParserDict:
 
 
 def send_entries(feed: Feed, content: feedparser.FeedParserDict):
+    notifier: Notifier = DiscordNotifier(feed)
+
     for entry in reversed(content.entries):
         if hasattr(entry, "published"):
             entry_date = parser.parse(entry.published)
@@ -28,11 +30,7 @@ def send_entries(feed: Feed, content: feedparser.FeedParserDict):
         if entry_date <= feed.last_fetched:
             continue
 
-        title = f"**{entry.title}**" if hasattr(entry, "title") else "(No title provided)"
-        summary = entry.summary if hasattr(entry, "summary") else "(No summary provided)"
-
-        message = f"{title}\n\n{summary}\n\n🔗 {entry.link}"
-        discord.send_message(feed, message)
+        notifier.notify(entry)
     pass
 
 
